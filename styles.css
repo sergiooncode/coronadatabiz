@@ -1,0 +1,31 @@
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.container h3 {
+    margin: 0;
+}
+
+div .navbar {
+    color: white;
+    background-color: black;
+    height: 60px;
+}
+
+.navbar-title {
+    padding: 18px;
+}
+
+.biz-container {
+    width: 800px;
+    margin: 200px auto;
+}
+
+.chart-container{
+    background-color: orange;
+}
+
+.chart {
+    background-color: red;
+}
