@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="styles.css">
+    <script type="text/javascript" src="main.js"></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
     <title>Document</title>
 </head>
 <body>
@@ -13,21 +15,52 @@
                 <h3>Corona Stats Chart</h3>
             </div>
         </div>
-        <div class="biz-container">
+        <div class="viz-container">
             <div class="dropdown-bar">
                 <div class="community-dropdown">
+                    <button class="btn-buy">Select Community</button>
+                    <!-- Button for opening dropdown -->
+                    <button class="btn-buy-list" id="dropBtn1"><span class="btn-arrow"></span></button>
+                    <!-- Dropdown menu itself - hidden by default -->
+                    <ul class="dropdown-menu" id="community-list"></ul>
                 </div>
                 <div class="indicator-dropdown">
+                    <button class="btn-buy">Select Indicator</button>
+                    <!-- Button for opening dropdown -->
+                    <button class="btn-buy-list" id="dropBtn1"><span class="btn-arrow"></span></button>
+                    <!-- Dropdown menu itself - hidden by default -->
+                    <ul class="dropdown-menu" id="indicator-list"></ul>
                 </div>
             </div>
             <div class="chart-container">
-                <div class="chart">chart</div>
+                <div class="chart" id="dataviz"></div>
             </div>
         </div>
     </div>
     <script>
         window.onload = function() {
-            console.log('you');
+            var casosFileUrl = 'https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos_long.csv';
+            Promise.all([
+                casosFileUrl
+            ].map(function(url) {
+                return fetch(url).then(function(response) {
+                    return response.ok ? response.text() : Promise.reject(response.status);
+                }).then(function(text) {
+                    var casosData = CSVToArray(text);
+                    delete casosData[0];
+
+                    dataObject = convertArrayToCCAAObject(casosData);
+                    var comunityData = dataObject['Madrid'];
+
+                    populateCommunityMenu();
+                    populateIndicatorMenu();
+
+                    plotChart( comunityData );
+                });
+            }))
+            .catch(function(err) {
+                console.log(err);
+            })
         }
     </script>
 </body>
