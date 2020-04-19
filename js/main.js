@@ -21,11 +21,11 @@ function convertArrayToCCAAObject(dataArray) {
     return dataObject;
 }
 
-function plotChart ( dataArray ) {
+function drawChart ( dataArray ) {
     // set the dimensions and margins of the graph
     var margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = 760 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+    width = 980 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
 
     // append the svg object to the body of the page
     var svg = d3.select("#dataviz")
@@ -66,7 +66,7 @@ function plotChart ( dataArray ) {
             .ticks(5)
     }
     // add the Y gridlines
-    svg.append("g")			
+    svg.append("g")
     .attr("class", "grid")
     .call(make_y_gridlines()
         .tickSize(-width)
@@ -74,18 +74,27 @@ function plotChart ( dataArray ) {
     );
     svg.append("g")
       .call(d3.axisLeft(y));
+    
+    var chartObject = {
+        'xAxis': x,
+        'yAxis': y,
+        'svgChart': svg
+    }
+    
+    return chartObject;
+}
 
+function plotLine(chartObject, dataArray, communityLabel) {
     // Add the line
-    svg.append("path")
+    chartObject['svgChart'].append("path")
       .datum(dataArray)
       .attr("fill", "none")
-      .attr("stroke", "steelblue")
+      .attr("stroke", "blue")
       .attr("stroke-width", 1.5)
       .attr("d", d3.line()
-        .x(function(d) { return x(d.date) })
-        .y(function(d) { return y(d.amount) })
+        .x(function(d) { return chartObject['xAxis'](d.date) })
+        .y(function(d) { return chartObject['yAxis'](d.amount) })
         )
-
 }
 
 // ref: http://stackoverflow.com/a/1293163/2343
@@ -175,29 +184,30 @@ function CSVToArray( strData, strDelimiter ){
     return( arrData );
 }
 
-function populateCommunityMenu() {
+function populateCommunityMenu(dataObject) {
     var ul = document.getElementById("community-list");
-    var communities = ['Andalucía', 'Asturias'];
+    var communities = Object.keys(dataObject);
     communities.forEach(community => {
         var a = document.createElement("a");
         a.setAttribute('href', "#");
         var li = document.createElement("li");
         li.appendChild(document.createTextNode(community));
         li.setAttribute("id", community);
+        li.classList.add("community-item");
         a.appendChild(li);
         ul.appendChild(a);
     })
 }
 
-function populateIndicatorMenu() {
+function populateIndicatorMenu(indicators) {
     var ul = document.getElementById("indicator-list");
-    var indicators = ['New Cases', 'Deaths'];
     indicators.forEach(indicator => {
         var a = document.createElement("a");
         a.setAttribute('href', "#");
         var li = document.createElement("li");
         li.appendChild(document.createTextNode(indicator));
         li.setAttribute("id", indicator);
+        li.classList.add("indicator-item");
         a.appendChild(li);
         ul.appendChild(a);
     })
@@ -206,39 +216,123 @@ function populateIndicatorMenu() {
 // Dropdown menus control
 
 //toggle dropdown menu open/close
-var toClose = false
+var indicatorMenuToClose = false;
+var communityMenuToClose = false;
 
-function toggle(e) {
+function toggleIndicatorMenu(e) {
   e.stopPropagation();
   var btn=this;
-  var menu = btn.nextSibling;
-  
-  while(menu && menu.nodeType != 1) {
-     menu = menu.nextSibling
-  }
-  if(!menu) return;
-  if (menu.style.display !== 'block') {
-    menu.style.display = 'block';
-    if(toClose) toClose.style.display="none";
-    toClose  = menu;
-  }  else {
-    menu.style.display = 'none';
-    toClose=false;
-  }
-
-};
-function closeAll() {
-    toClose.style.display='none';
+  var menu = btn.nextSibling.nextSibling;
+  switchIndicatorMenu(menu);
 };
 
-window.addEventListener("DOMContentLoaded",function(){
-  document.querySelectorAll(".btn-buy-list").forEach(function(btn){
-     btn.addEventListener("click",toggle,true);
-  });
-});
+function switchIndicatorMenu(menuElement) {
+     while(menuElement && menuElement.nodeType != 1) {
+        menuElement = menuElement.nextSibling
+     }
+     if(!menuElement) return;
+     if (menuElement.style.display !== 'block') {
+         menuElement.style.display = 'block';
+         if(indicatorMenuToClose) indicatorMenuToClose.style.display="none";
+         indicatorMenuToClose  = menuElement;
+     }  else {
+         menuElement.style.display = 'none';
+         indicatorMenuToClose=false;
+     }
+   }
+
+function toggleCommunityMenu(e) {
+     e.stopPropagation();
+     var btn=this;
+     var menu = btn.nextSibling.nextSibling;
+     switchCommunityMenu(menu);
+   };
+
+function switchCommunityMenu(menuElement) {
+    while(menuElement && menuElement.nodeType != 1) {
+        menuElement = menuElement.nextSibling
+     }
+     if(!menuElement) return;
+     if (menuElement.style.display !== 'block') {
+        menuElement.style.display = 'block';
+        if(communityMenuToClose) communityMenuToClose.style.display="none";
+        communityMenuToClose  = menuElement;
+     } else {
+         menuElement.style.display = 'none';
+         communityMenuToClose=false;
+     }
+}
+
+function closeIndicatorMenu() {
+    listMenuElement = document.getElementById("indicator-list");
+    switchIndicatorMenu(listMenuElement);
+};
+
+function closeCommunityMenu() {
+    listMenuElement = document.getElementById("community-list");
+    switchCommunityMenu(listMenuElement);
+};
+
+function selectIndicatorDropdownItem(e) {
+    switchIndicatorMenu(e.target.parentElement.parentElement);
+}
+
+var makeSelectCommunityDropdownItem = function(chartAndDataObject) {
+    return function (e) {
+        document.getElementById("community-label-id").innerHTML = e.target.id;
+        var selectedCommunityData = chartAndDataObject["dataObject"][e.target.id];
+        plotLine(chartAndDataObject["chartObject"], selectedCommunityData, e.target.id);
+        switchCommunityMenu(e.target.parentElement.parentElement);
+    }
+}
 
 window.onclick=function(event){
-  if (toClose){
-    closeAll.call(event.target);
+  if (communityMenuToClose) {
+    closeCommunityMenu.call(event.target);
+  }
+  if (indicatorMenuToClose) {
+    closeIndicatorMenu.call(event.target);
   }
 };
+
+window.onload = function() {
+    var casosFileUrl = 'https://raw.githubusercontent.com/datadista/datasets/master/COVID%2019/ccaa_covid19_casos_long.csv';
+    Promise.all([
+        casosFileUrl
+    ].map(function(url) {
+        return fetch(url).then(function(response) {
+            return response.ok ? response.text() : Promise.reject(response.status);
+        }).then(function(text) {
+            var casosData = CSVToArray(text);
+            delete casosData[0];
+
+            var dataObject = convertArrayToCCAAObject(casosData);
+            var communityData = dataObject['Madrid'];
+            var chartObject = drawChart( communityData );
+            var chartAndDataObject = {
+                'dataObject': dataObject,
+                'chartObject': chartObject
+            };
+            var indicators = ['New Cases', 'Deaths'];
+
+            populateCommunityMenu(dataObject);
+            populateIndicatorMenu(indicators);
+            document.querySelectorAll(".btn-indicator-list").forEach(function(btn){
+                btn.addEventListener("click", toggleIndicatorMenu, true);
+            });
+            document.querySelectorAll(".btn-community-list").forEach(function(btn){
+                btn.addEventListener("click", toggleCommunityMenu, true);
+            });
+            document.querySelectorAll(".community-item").forEach(function(item){
+                item.addEventListener("click",
+                makeSelectCommunityDropdownItem(chartAndDataObject), true);
+            });
+            document.querySelectorAll(".indicator-item").forEach(function(item){
+                item.addEventListener("click", selectIndicatorDropdownItem, true);
+            });
+        });
+    }))
+    .catch(function(err) {
+        console.log(err);
+    })
+}
